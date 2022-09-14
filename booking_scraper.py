@@ -73,9 +73,9 @@ class WebScraper():
                 for bbox in bbox_list:
                     self.all_links.append(self.markers_on_map_url+bbox)
             for hotel in hotels:
-                link_hotel = hotel['b_url']
+                link_hotel = hotel['b_url'].split(';')[0]
                 if(link_hotel.split('hotel/')[1][0:2] != self.iso_code.lower()):
-                    return
+                    continue
                 hotel_url = self.base_url + link_hotel
                 self.hotels_urls.append(hotel_url)
 

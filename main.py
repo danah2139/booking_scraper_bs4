@@ -12,7 +12,7 @@ def get_country_name():
             print("please enter a valid country")
 
 
-if (__name__ == '__main__'):
+if __name__ == '__main__':
     country = get_country_name()
     iso_code = pycountry.countries.get(name=country).alpha_2
-    webScraper = WebScraper(country,iso_code)
+    webScraper = WebScraper(country, iso_code)

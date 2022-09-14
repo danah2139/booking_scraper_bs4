@@ -46,7 +46,7 @@ class HotelData:
     def get_hotel_events(self, hotel):
         events = {}
         events_near_hotel = hotel.select(
-            '.property_page_surroundings_block')
+            '#hp_surroundings_box')
         # print(events_near_hotel, 'events_near_hotel')
         for event in events_near_hotel:
             event_key = event.select_one(
@@ -61,7 +61,7 @@ class HotelData:
         return events
 
     def get_hotel_services(self, hotel):
-        hotel_services = hotel.select('.hotel-facilities-group')
+        hotel_services = hotel.select('.property_page_surroundings_block li .bui-list__body')
         services = {}
         for service in hotel_services:
             service_key = service.select_one(
