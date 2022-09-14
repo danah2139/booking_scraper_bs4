@@ -119,7 +119,7 @@ class WebScraper():
         map_tasks = []
 
         headers = {
-            "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"}
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'}
 
         self.start_requests()
         async with aiohttp.ClientSession(headers=headers) as session:
