@@ -32,12 +32,10 @@ class WebScraper():
     def __init__(self, country, iso_code):
         self.country = country
         self.iso_code = iso_code
-        self.hotels_urls = []
+        self.hotels_urls = set()
         # Global Place To Store The Data:
         self.all_data = []
         self.all_links = []
-        # self.master_dict = {}
-        self.count_hotels = 0
         # Run The Scraper:
         if (sys.platform.startswith('win')
             and sys.version_info[0] == 3
@@ -52,9 +50,8 @@ class WebScraper():
                 # Extracting the Text:
                 text = await response.text()
                 hotel = BeautifulSoup(text, 'html.parser')
-                self.count_hotels += 1
                 hotel_url = url.split('?')[0]
-                print(f'hotel number:{self.count_hotels} ,hotel url: {hotel_url}')
+                print(f'hotel url: {hotel_url}')
                 # time.sleep(5)
                 # Extracting hotel:
                 hotel_data = HotelData(hotel)
@@ -82,12 +79,16 @@ class WebScraper():
                 bbox = url.split('BBOX=')[1]
                 bbox_list = devide_bbox(bbox)
                 for bbox in bbox_list:
-                    self.fetch_map(session, self.markers_on_map_url+bbox)
+                    await self.fetch_map(session, self.markers_on_map_url+bbox)
                 for hotel in hotels:
                     link_hotel = hotel['b_url'].split(';')[0]
                     if(link_hotel.split('hotel/')[1][0:2] == self.iso_code.lower()):
                         hotel_url = self.base_url + link_hotel
-                        self.hotels_urls.append(hotel_url)
+                        hotel_url = hotel_url.split('?')[0]
+                        self.hotels_urls.add(hotel_url)
+                        print(f'hotel number:{len(self.hotels_urls)} ,hotel url: {hotel_url}, time:{time.ctime()}')
+            else:
+                print(f'empty list of hotels_urls time:{time.ctime()}')
 
     async def download_images(self, session, path, image_urls):
         for url in image_urls:
@@ -126,8 +127,10 @@ class WebScraper():
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'}
 
         country_markers_on_map_url = self.start_requests()
+        print(f"start recursive: {time.ctime()}")
         async with aiohttp.ClientSession(headers=headers) as session:
             await self.fetch_map(session, country_markers_on_map_url)
+        print(f"finish recursive: {time.ctime()}")
 
         async with aiohttp.ClientSession(headers=headers) as session:
             for url in self.hotels_urls:
