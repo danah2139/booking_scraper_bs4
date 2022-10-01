@@ -1,7 +1,9 @@
 import aiohttp
 import asyncio
 import aiofiles
+import sys
 import os
+import time
 from bs4 import BeautifulSoup
 from geojson import Feature, Point, FeatureCollection, dump
 import geopandas as gpd
@@ -37,6 +39,11 @@ class WebScraper():
         # self.master_dict = {}
         self.count_hotels = 0
         # Run The Scraper:
+        if (sys.platform.startswith('win')
+            and sys.version_info[0] == 3
+                and sys.version_info[1] >= 8):
+            policy = asyncio.WindowsSelectorEventLoopPolicy()
+            asyncio.set_event_loop_policy(policy)
         asyncio.run(self.main())
 
     async def fetch_hotel(self, session, url):
@@ -45,13 +52,17 @@ class WebScraper():
                 # Extracting the Text:
                 text = await response.text()
                 hotel = BeautifulSoup(text, 'html.parser')
+                self.count_hotels += 1
+                hotel_url = url.split('?')[0]
+                print(f'hotel number:{self.count_hotels} ,hotel url: {hotel_url}')
+                # time.sleep(5)
                 # Extracting hotel:
                 hotel_data = HotelData(hotel)
                 feature = await self.parsing_hotel_data(hotel_data, hotel)
                 await self.extract_hotel_images(hotel_data, hotel, session)
                 return feature
         except Exception as e:
-            print(str(e))
+            print(str(e), 'fetch_hotel')
 
     async def extract_hotel_images(self, hotel_data, hotel, session):
         image_urls = hotel_data.get_hotel_images_url(hotel)
@@ -71,13 +82,12 @@ class WebScraper():
                 bbox = url.split('BBOX=')[1]
                 bbox_list = devide_bbox(bbox)
                 for bbox in bbox_list:
-                    self.all_links.append(self.markers_on_map_url+bbox)
-            for hotel in hotels:
-                link_hotel = hotel['b_url'].split(';')[0]
-                if(link_hotel.split('hotel/')[1][0:2] != self.iso_code.lower()):
-                    continue
-                hotel_url = self.base_url + link_hotel
-                self.hotels_urls.append(hotel_url)
+                    self.fetch_map(session, self.markers_on_map_url+bbox)
+                for hotel in hotels:
+                    link_hotel = hotel['b_url'].split(';')[0]
+                    if(link_hotel.split('hotel/')[1][0:2] == self.iso_code.lower()):
+                        hotel_url = self.base_url + link_hotel
+                        self.hotels_urls.append(hotel_url)
 
     async def download_images(self, session, path, image_urls):
         for url in image_urls:
@@ -91,10 +101,6 @@ class WebScraper():
 
     async def parsing_hotel_data(self, hotel_data, hotel):
         try:
-            self.count_hotels += 1
-            # hotel_url = hotel.url.split('?')[0]
-            # print('hotel number:%s ,hotel url: %s',
-            #     self.count_hotels, hotel_url)
             hotel_coordinates = hotel_data.get_hotel_coordinates(hotel)
             point = Point(hotel_coordinates)
             feature = Feature(geometry=point, properties=hotel_data.properties)
@@ -112,26 +118,21 @@ class WebScraper():
         max_lon = float(max_lon) + 0.5
         max_lat = float(max_lat) + 0.5
         country_bbox = f'{min_lon},{min_lat},{max_lon},{max_lat}'
-        self.all_links.append(self.markers_on_map_url + country_bbox)
+        return self.markers_on_map_url + country_bbox
 
     async def main(self):
         hotels_tasks = []
-        map_tasks = []
-
         headers = {
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.75 Safari/537.36'}
 
-        self.start_requests()
+        country_markers_on_map_url = self.start_requests()
         async with aiohttp.ClientSession(headers=headers) as session:
-            for url in self.all_links:
-                map_tasks.append(self.fetch_map(session, url))
-
-            hotels_urls = await asyncio.gather(*map_tasks)
-            self.hotels_urls.extend(hotels_urls)
+            await self.fetch_map(session, country_markers_on_map_url)
 
         async with aiohttp.ClientSession(headers=headers) as session:
             for url in self.hotels_urls:
-                hotels_tasks.append(self.fetch_hotel(session, url))
+                if url is not None:
+                    hotels_tasks.append(self.fetch_hotel(session, url))
 
             features = await asyncio.gather(*hotels_tasks)
             self.all_data.extend(features)

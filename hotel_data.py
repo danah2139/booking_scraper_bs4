@@ -46,7 +46,7 @@ class HotelData:
     def get_hotel_events(self, hotel):
         events = {}
         events_near_hotel = hotel.select(
-            '#hp_surroundings_box')
+            '#hp_surroundings_box li .bui-list__body')
         # print(events_near_hotel, 'events_near_hotel')
         for event in events_near_hotel:
             event_key = event.select_one(
@@ -100,11 +100,11 @@ class HotelData:
 
     def push_hotel_data_to_properties(self, hotel):
         self.properties['hotel_name'] = self.get_hotel_name(hotel)
-        self.properties['hotel_address'] = self.get_hotel_address(hotel)
-        self.properties['hotel_descrption'] = self.get_hotel_description(hotel)
-        self.properties['hotel_rate'] = self.get_hotel_rate(hotel)
-        self.properties['number_of_stars'] = self.get_hotel_number_of_stars(
-            hotel)
-        self.properties['events_near_hotel'] = self.get_hotel_events(hotel)
-        self.properties['hotel_services'] = self.get_hotel_services(hotel)
-        self.properties['hotel_comments'] = self.get_hotel_comments(hotel)
+        # self.properties['hotel_address'] = self.get_hotel_address(hotel)
+        # self.properties['hotel_descrption'] = self.get_hotel_description(hotel)
+        # self.properties['hotel_rate'] = self.get_hotel_rate(hotel)
+        # self.properties['number_of_stars'] = self.get_hotel_number_of_stars(
+        #     hotel)
+        # self.properties['events_near_hotel'] = self.get_hotel_events(hotel)
+        # self.properties['hotel_services'] = self.get_hotel_services(hotel)
+        # self.properties['hotel_comments'] = self.get_hotel_comments(hotel)
