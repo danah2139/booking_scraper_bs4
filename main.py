@@ -1,4 +1,4 @@
-from booking_scraper import WebScraper
+from booking_test import WebScraper
 import pycountry
 import time
 
@@ -16,9 +16,9 @@ def get_country_name():
 if __name__ == '__main__':
     country = get_country_name()
     iso_code = pycountry.countries.get(name=country).alpha_2
-    start_time = time.ctime()
+    start_time = time.time()
     print(f"start scraping: {start_time}")
     webScraper = WebScraper(country, iso_code)
-    end_time = time.ctime()
+    end_time = time.time()
     total_time = end_time - start_time
     print(f"finish all in: {total_time}")
