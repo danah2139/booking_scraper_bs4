@@ -28,7 +28,7 @@ class WebScraper():
     markers_on_map_url = base_url + '/markers_on_map?label=gen173nr-1DCAIoTTgBSDNYBGhqiAEBmAEJuAEZyAEM2AED6AEB-AECiAIBqAIDuALJ3LyYBsACAdICJGY0ZmExYzc2LTlmOGMtNGM0OC04YTA1LTkzYzc3NDdjZmEwY9gCBOACAQ&sid=5d1d00651882df1251e4de2b42a91f58&srpvid=311644e806e807a6&aid=304142&dest_type=country&sr_id=&ref=searchresults&limit=100&stype=1&lang=en-gb&ssm=1&sech=1&ngp=1&room1=A%2CA&maps_opened=1&esf=1&sr_lat=&sr_long=&dba=1&dbc=1&srh=191867%2C3016146%2C301272%2C6948254%2C51288%2C343954%2C301050%2C6478778%2C2337735%2C1357296%2C338044%2C451028%2C5390634%2C1420234%2C4373824%2C173909%2C1865108%2C238601%2C54257%2C542266%2C180434%2C361801%2C1105263%2C4246076%2C270718&somp=1&mdimb=1%20&tp=1%20&img_size=270x200%20&avl=1%20&nor=1%20&spc=1%20&rmd=1%20&slpnd=1%20&sbr=1&at=1%20&sat=1%20&ssu=1&srocc=1&nflt=ht_id%3D204;BBOX='
     country_df = gpd.read_file("zip://TM_WORLD_BORDERS-0.3.zip")
     headers = {
-        "user-agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"}
+        "user-agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML,like Gecko) Chrome/83.0.4103.116 Safari/537.36'}
 
     def __init__(self, country, iso_code):
         self.country = country
@@ -42,7 +42,7 @@ class WebScraper():
 
     def fetch_hotel(self, url):
         try:
-            response  = requests.get(url)
+            response  = requests.get(url,headers= self.headers)
             # Extracting the Text:
             text = response.text()
             hotel = BeautifulSoup(text, 'html.parser')
@@ -66,7 +66,7 @@ class WebScraper():
         # self.download_images(path, image_urls)
 
     def fetch_map(self, url):
-            response= requests.get(url)
+            response= requests.get(url,headers= self.headers)
             json_response = response.json()
             hotels = json_response['b_hotels']
             if(len(hotels) <= 1):
@@ -88,15 +88,15 @@ class WebScraper():
                     f'hotel number:{len(self.hotels_urls)} ,hotel url: {hotel_url}, time:{time.ctime()}')
                 # print(self.hotels_urls, 'self.hotels_urls')
 
-    async def download_images(self, session, path, image_urls):
-        for url in image_urls:
-            image_name = url.split('/')[-1].split('?')[0]
-            path_image = path + image_name
-            async with session.get(url) as resp:
-                if resp.status == 200:
-                    f = aiofiles.open(path_image, mode='wb')
-                    f.write(await resp.read())
-                    f.close()
+    # async def download_images(self, session, path, image_urls):
+    #     for url in image_urls:
+    #         image_name = url.split('/')[-1].split('?')[0]
+    #         path_image = path + image_name
+    #         async with session.get(url) as resp:
+    #             if resp.status == 200:
+    #                 f = aiofiles.open(path_image, mode='wb')
+    #                 f.write(await resp.read())
+    #                 f.close()
 
     async def parsing_hotel_data(self, hotel_data, hotel):
         try:
