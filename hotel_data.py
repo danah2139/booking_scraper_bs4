@@ -1,3 +1,7 @@
+from utils import logging
+
+logger = logging.getLogger(__name__)
+
 class HotelData:
     def __init__(self, hotel):
         self.properties = {}
@@ -18,10 +22,14 @@ class HotelData:
         return hotel_name
 
     def get_hotel_address(self, hotel):
-        hotel_address = hotel.select_one(
-            '#showMap2 .hp_address_subtitle').text
-        hotel_address = hotel_address.replace(
-            '\n', '') if hotel_address else'None'
+        try:
+            hotel_address = hotel.select_one(
+                '#showMap2 .hp_address_subtitle')
+            hotel_address = hotel_address.text.replace(
+                '\n', '')
+        except Exception as e:
+            logger.info(str(e) ,'get_hotel_address')
+            hotel_address = 'None' 
         return hotel_address
 
     def get_hotel_description(self, hotel):
@@ -35,33 +43,29 @@ class HotelData:
 
     def get_hotel_rate(self, hotel):
         hotel_rate = hotel.select_one(
-            '[data-testid="review-score-component"] div').text
-        return hotel_rate
+            '[data-testid="review-score-component"] div')
+        return hotel_rate.text if hotel_rate else None
 
     def get_hotel_number_of_stars(self, hotel):
         number_of_stars = len(
-            hotel.select('[data-testid = "rating-stars"] span'))
+            hotel.select('[data-testid = "quality-rating"] span'))
         return number_of_stars
 
     def get_hotel_events(self, hotel):
         events = {}
         events_near_hotel = hotel.select(
-            '#hp_surroundings_box li .bui-list__body')
-        # print(events_near_hotel, 'events_near_hotel')
+            '.property_page_surroundings_block')
+        print(events_near_hotel, 'events_near_hotel')
         for event in events_near_hotel:
             event_key = event.select_one(
-                '.bui-list__description')
-            event_key = event_key.text.replace(
-                '\n', '') if event_key else 'None'
+                '.bui-list__description').text
             event_value = event.select_one(
-                '.hp_location_block__section_list_distance')
-            event_value = event_value.replace(
-                '\n', '') if event_value else 'None'
+                '.hp_location_block__section_list_distance').text
             events[event_key] = event_value
         return events
 
     def get_hotel_services(self, hotel):
-        hotel_services = hotel.select('.property_page_surroundings_block li .bui-list__body')
+        hotel_services = hotel.select('.hotel-facilities-group')
         services = {}
         for service in hotel_services:
             service_key = service.select_one(
@@ -86,7 +90,7 @@ class HotelData:
 
     def get_hotel_comments(self, hotel):
         hotel_comments = hotel.select(
-            '[data-testid="featuredreview-text"] div')
+            '[data-testid="featuredreview-text"] div')      
         first_comment = hotel_comments[0].text if len(
             hotel_comments) > 0 else 'None'
         second_comment = hotel_comments[1].text if len(
@@ -100,11 +104,11 @@ class HotelData:
 
     def push_hotel_data_to_properties(self, hotel):
         self.properties['hotel_name'] = self.get_hotel_name(hotel)
-        # self.properties['hotel_address'] = self.get_hotel_address(hotel)
-        # self.properties['hotel_descrption'] = self.get_hotel_description(hotel)
-        # self.properties['hotel_rate'] = self.get_hotel_rate(hotel)
-        # self.properties['number_of_stars'] = self.get_hotel_number_of_stars(
-        #     hotel)
+        self.properties['hotel_address'] = self.get_hotel_address(hotel)
+        self.properties['hotel_descrption'] = self.get_hotel_description(hotel)
+        self.properties['hotel_rate'] = self.get_hotel_rate(hotel)
+        self.properties['number_of_stars'] = self.get_hotel_number_of_stars(
+            hotel)
         # self.properties['events_near_hotel'] = self.get_hotel_events(hotel)
-        # self.properties['hotel_services'] = self.get_hotel_services(hotel)
-        # self.properties['hotel_comments'] = self.get_hotel_comments(hotel)
+        self.properties['hotel_services'] = self.get_hotel_services(hotel)
+        self.properties['hotel_comments'] = self.get_hotel_comments(hotel)
