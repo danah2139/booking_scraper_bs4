@@ -2,6 +2,7 @@ from utils import logging
 
 logger = logging.getLogger(__name__)
 
+
 class HotelData:
     def __init__(self, hotel):
         self.properties = {}
@@ -10,6 +11,8 @@ class HotelData:
     def get_hotel_coordinates(self, hotel):
         coordinates = hotel.select_one(
             'script:-soup-contains("defaultCoordinates")')
+        if (coordinates is None):
+            return None
         coordinates = str(coordinates).split('defaultCoordinates: [')[1]
         coordinates = coordinates.split('],')[0].replace("'", '').split(',')
         x = coordinates[0].strip()
@@ -18,18 +21,15 @@ class HotelData:
 
     def get_hotel_name(self, hotel):
         hotel_name = hotel.select_one("#hp_hotel_name_reviews")
-        hotel_name = hotel_name.text.replace('\n', '') if hotel_name else 'None'
+        hotel_name = hotel_name.text.replace(
+            '\n', '') if hotel_name else None
         return hotel_name
 
     def get_hotel_address(self, hotel):
-        try:
-            hotel_address = hotel.select_one(
-                '#showMap2 .hp_address_subtitle')
-            hotel_address = hotel_address.text.replace(
-                '\n', '')
-        except Exception as e:
-            logger.info(str(e) ,'get_hotel_address')
-            hotel_address = 'None' 
+        hotel_address = hotel.select_one(
+            '#showMap2 .hp_address_subtitle')
+        hotel_address = hotel_address.text.replace(
+            '\n', '') if hotel_address else 'None'
         return hotel_address
 
     def get_hotel_description(self, hotel):
@@ -37,7 +37,7 @@ class HotelData:
             '#property_description_content p')
         text = ''
         for row in hotel_descrption:
-            if(row):
+            if (row):
                 text += row.get_text()
         return text
 
@@ -74,7 +74,7 @@ class HotelData:
                 '\n', '') if service_key else 'None'
             service_value = service.select_one(
                 '.hotel-facilities-group__policy')
-            if(service_value):
+            if (service_value):
                 services[service_key] = service_value.text.replace('\n', '')
             else:
                 services[service_key] = []
@@ -90,7 +90,7 @@ class HotelData:
 
     def get_hotel_comments(self, hotel):
         hotel_comments = hotel.select(
-            '[data-testid="featuredreview-text"] div')      
+            '[data-testid="featuredreview-text"] div')
         first_comment = hotel_comments[0].text if len(
             hotel_comments) > 0 else 'None'
         second_comment = hotel_comments[1].text if len(

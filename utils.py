@@ -1,9 +1,10 @@
-import coloredlogs,logging
+import coloredlogs
+import logging
 from geopy import distance
 
 coloredlogs.install()
 logging.basicConfig(level=logging.INFO,
-                    format='%(name)s - %(levelname)s - %(message)s - %(asctime)s')
+                    format='%(name)s - %(levelname)s - %(message)s - %(relativeCreated)d')
 
 
 def divide_bbox(bbox):
@@ -18,8 +19,8 @@ def divide_bbox(bbox):
             f'{cent_lon},{min_lat},{max_lon},{cent_lat}',
             f'{min_lon},{cent_lat},{cent_lon},{max_lat}',
             f'{cent_lon},{cent_lat},{max_lon},{max_lat}']
-    
-    
+
+
 def get_area(bbox):
     bbox = [float(val) for val in bbox.split(',')]
     [min_lon, min_lat, max_lon, max_lat] = bbox

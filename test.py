@@ -1,5 +1,7 @@
 import requests
 from time import time
+
+from urllib3 import Retry
 from utils import logging, get_area, divide_bbox
 import os
 from bs4 import BeautifulSoup
@@ -14,10 +16,11 @@ headers = {
 hotels_urls = set()
 logger = logging.getLogger(__name__)
 
+
 def add_hotels_url_to_set(hotels):
     for hotel in hotels:
         link_hotel = hotel['b_url'].split(';')[0]
-        if(link_hotel and link_hotel.split('hotel/')[1][0:2] == 'il'):
+        if (link_hotel and link_hotel.split('hotel/')[1][0:2] == 'il'):
             hotel_url = base_url + link_hotel
             hotel_url = hotel_url.split('?')[0]
             hotels_urls.add(hotel_url)
@@ -26,23 +29,32 @@ def add_hotels_url_to_set(hotels):
 
 
 def recursive_divide_bbox(url):
-    response = requests.get(url, headers=headers)
+    retry = 3
+    while retry > 0:
+        response = requests.get(url, headers=headers)
+        if (response.status_code == 200):
+            break
+        retry -= 1
+    if (response.status_code != 200):
+        return
     json_response = response.json()
     hotels = json_response['b_hotels']
     bbox = url.split('BBOX=')[1]
     area = get_area(bbox)
-    if(len(hotels) <= 1 or area < 0.01):
+    if (len(hotels) <= 1 or area < 0.5):
         return
     add_hotels_url_to_set(hotels)
     bbox_list = divide_bbox(bbox)
     for bbox in bbox_list:
         recursive_divide_bbox(markers_on_map_url+bbox)
-    
-def write_to_geojson_file(country,all_data):
+
+
+def write_to_geojson_file(country, all_data):
     feature_collection = FeatureCollection(all_data)
     with open(f'{country}.geojson', "w", encoding='utf8') as f:
-        dump(feature_collection, f, ensure_ascii=False) 
-    
+        dump(feature_collection, f, ensure_ascii=False)
+
+
 def fetch_hotel(url):
     try:
         response = requests.get(url, headers=headers)
@@ -52,6 +64,7 @@ def fetch_hotel(url):
         return hotel
     except Exception as e:
         logger.info(str(e), 'fetch_hotel')
+
 
 def parsing_hotel_data(url):
     try:
@@ -64,7 +77,8 @@ def parsing_hotel_data(url):
         return feature
     except Exception as e:
         logger.info(str(e), 'parsing_hotel_data')
-    
+
+
 def extract_hotel_images(hotel_data, hotel):
     image_urls = hotel_data.get_hotel_images_url(hotel)
     hotel_name = hotel_data.get_hotel_name(hotel).replace(' ', '_')
@@ -73,29 +87,34 @@ def extract_hotel_images(hotel_data, hotel):
         os.makedirs(path, mode=0o777)
     download_images(path, image_urls)
 
+
 def download_images(path, image_urls):
     for url in image_urls:
         image_name = url.split('/')[-1].split('?')[0]
         path_image = path + image_name
         response = requests.get(url)
         if response.status_code == 200:
-            with open(path_image,'wb') as file:
+            with open(path_image, 'wb') as file:
                 file.write(response.content)
-                    
 
-if __name__ == '__main__':
+
+def main():
     start_time = time()
     logger.info(f"start downloading hotels")
-    with ThreadPoolExecutor(max_workers=16) as executor:
+    with ThreadPoolExecutor() as executor:
         executor.submit(recursive_divide_bbox(
             markers_on_map_url+'34.2654333839,29.4533796,35.8363969256,33.3356317'))
     logger.info('start scraping %s hotels', len(hotels_urls))
     all_data = []
-    with ProcessPoolExecutor(max_workers=16) as executor:
+    with ProcessPoolExecutor(max_workers=32) as executor:
         all_data = list(executor.map(parsing_hotel_data, hotels_urls))
     logger.info('start writing to geojson file')
     with ThreadPoolExecutor() as executor:
         executor.submit(write_to_geojson_file('israel', all_data))
     end_time = time()
-    total_time = (end_time - start_time)/ 60
-    logger.info('finish all in: %s sec', total_time)
+    total_time = (end_time - start_time) / 60
+    logger.info('finish all in: %s min', total_time)
+
+
+if __name__ == '__main__':
+    main()
